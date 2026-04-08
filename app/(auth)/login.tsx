@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const { login, register } = useAuth();
@@ -14,11 +15,16 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       if (isRegistering) {
-        await register(email, password);
+        if (!username) {
+          alert('Please enter a username');
+          setLoading(false);
+          return;
+        }
+        await register(email, password, username);
       } else {
         await login(email, password);
       }
-    } catch (e) {
+    } catch (e: any) {
       alert(e.message);
     } finally {
       setLoading(false);
@@ -30,6 +36,16 @@ export default function LoginScreen() {
       <Text style={styles.title}>DISCIPLINE</Text>
       <Text style={styles.subtitle}>No Excuses.</Text>
 
+      {isRegistering && (
+        <TextInput
+          style={styles.input}
+          placeholder="Username"
+          placeholderTextColor="#666"
+          value={username}
+          onChangeText={setUsername}
+          autoCapitalize="words"
+        />
+      )}
       <TextInput
         style={styles.input}
         placeholder="Email"

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Switch, InteractionManager } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { fetchRecentLogs, DailyLog } from '../../services/db';
 import ScoreBar from '../../components/ScoreBar';
@@ -22,9 +22,18 @@ export default function ProfileScreen() {
   const { isDark, toggleTheme, colors } = useTheme();
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (user) loadStats();
+    if (user) {
+      const task = InteractionManager.runAfterInteractions(() => {
+        setIsReady(true);
+        loadStats();
+      });
+      return () => task.cancel();
+    } else {
+      InteractionManager.runAfterInteractions(() => setIsReady(true));
+    }
   }, [user]);
 
   const loadStats = async () => {
@@ -55,12 +64,8 @@ export default function ProfileScreen() {
     return marked;
   }, [logs, colors.primary]);
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+  if (!isReady) {
+    return <View style={[styles.container, { backgroundColor: colors.background }]} />;
   }
 
   return (
@@ -71,7 +76,10 @@ export default function ProfileScreen() {
     >
       <View style={styles.headerRow}>
         <View style={styles.headerTitleGroup}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>PROFILE</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.headerTitle, { color: colors.text, marginRight: 12 }]}>PROFILE</Text>
+            {loading && <ActivityIndicator size="small" color={colors.primary} />}
+          </View>
           <Text style={[styles.quoteText, { color: colors.textMuted }]}>
             “ಸತ್ತ ಮೇಲೆ ಮಲಗೋದು ಇದ್ದೇ ಇದೆ ಎದ್ದಿದ್ದಾಗ ಏನಾದ್ರೂ ಸಾಧಿಸು”
           </Text>
@@ -134,7 +142,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
     paddingTop: 64,
-    paddingBottom: 48,
+    paddingBottom: 130,
   },
   centered: {
     justifyContent: 'center',

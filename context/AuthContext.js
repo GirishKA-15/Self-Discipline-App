@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
 import { auth } from "../firebaseConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
@@ -11,7 +11,7 @@ export const AuthContext = createContext({
   user: null,
   loading: true,
   login: async (email, password) => {},
-  register: async (email, password) => {},
+  register: async (email, password, username) => {},
   logout: async () => {}
 });
 
@@ -32,8 +32,14 @@ export const AuthProvider = ({ children }) => {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
-  const register = async (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const register = async (email, password, username) => {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    if (username) {
+      await updateProfile(userCredential.user, { displayName: username });
+      // Update local state to reflect new displayName immediately
+      setUser({ ...userCredential.user, displayName: username });
+    }
+    return userCredential;
   };
 
   const logout = async () => {

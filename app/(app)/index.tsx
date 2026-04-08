@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, InteractionManager } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
 import { fetchDailyLog, updateDailyHabit, DailyLog } from '../../services/db';
@@ -12,6 +12,7 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const { colors, isDark } = useTheme();
   const router = useRouter();
+  const [isReady, setIsReady] = useState(false);
   const [log, setLog] = useState<DailyLog>({
     wakeup: false, no_distractions: false, deep_work_completed: false,
     skill_learning: false, gym: false, sleep_on_time: false,
@@ -22,7 +23,13 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     if (user) {
-      loadData();
+      const task = InteractionManager.runAfterInteractions(() => {
+        setIsReady(true);
+        loadData();
+      });
+      return () => task.cancel();
+    } else {
+      InteractionManager.runAfterInteractions(() => setIsReady(true));
     }
   }, [user]);
 
@@ -59,6 +66,10 @@ export default function DashboardScreen() {
     }
   };
 
+  if (!isReady) {
+    return <View style={[styles.container, { backgroundColor: colors.background }]} />;
+  }
+
   return (
     <ScrollView 
       style={[styles.container, { backgroundColor: colors.background }]} 
@@ -69,7 +80,10 @@ export default function DashboardScreen() {
         <View style={{ flex: 1 }}>
           <Text style={[styles.date, { color: colors.textMuted }]}>{new Date().toDateString().toUpperCase()}</Text>
           <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: colors.text }]}>COMMAND CENTER</Text>
+            <Text style={[{ color: colors.primary, fontWeight: 'bold', fontSize: 18, marginBottom: 4 }]}>
+              Hello {((user as any)?.displayName || (user as any)?.email?.split('@')[0] || 'User')}
+            </Text>
+            <Text style={[styles.title, { color: colors.text }]}>Be Discipline</Text>
             <Text style={[styles.quoteText, { color: colors.textMuted }]}>
               “ಸತ್ತ ಮೇಲೆ ಮಲಗೋದು ಇದ್ದೇ ಇದೆ ಎದ್ದಿದ್ದಾಗ ಏನಾದ್ರೂ ಸಾಧಿಸು”
             </Text>
@@ -130,7 +144,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
     paddingTop: 64,
-    paddingBottom: 48,
+    paddingBottom: 130,
   },
   centered: {
     justifyContent: 'center',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, InteractionManager } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { fetchRecentLogs, DailyLog } from '../../services/db';
 import { useTheme } from '../../context/ThemeContext';
@@ -53,6 +53,7 @@ export default function TrackerScreen() {
   const { colors, isDark } = useTheme();
   const [logs, setLogs] = useState<DailyLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isReady, setIsReady] = useState(false);
 
   const date = new Date();
   const year = date.getFullYear();
@@ -61,7 +62,15 @@ export default function TrackerScreen() {
   const monthName = date.toLocaleString('default', { month: 'long' });
 
   useEffect(() => {
-    if (user) loadMonthData();
+    if (user) {
+      const task = InteractionManager.runAfterInteractions(() => {
+        setIsReady(true);
+        loadMonthData();
+      });
+      return () => task.cancel();
+    } else {
+      InteractionManager.runAfterInteractions(() => setIsReady(true));
+    }
   }, [user]);
 
   const loadMonthData = async () => {
@@ -85,13 +94,14 @@ export default function TrackerScreen() {
   const getDayOfWeek = (day: number) => new Date(year, month, day).toDateString().substring(0, 2);
   const daysArray = React.useMemo(() => Array.from({ length: daysInMonth }, (_, i) => i + 1), [daysInMonth]);
 
-  if (loading) {
+  if (!isReady) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      <View style={[styles.container, { backgroundColor: colors.background }]} />
     );
   }
+
+  // Removed the full screen loading spinner so the empty grid acts as a skeleton loader
+
 
   return (
     <ScrollView 
@@ -99,11 +109,14 @@ export default function TrackerScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>TRACKER</Text>
-        <Text style={[styles.quoteText, { color: colors.textMuted }]}>
-          “ಸತ್ತ ಮೇಲೆ ಮಲಗೋದು ಇದ್ದೇ ಇದೆ ಎದ್ದಿದ್ದಾಗ ಏನಾದ್ರೂ ಸಾಧಿಸು”
-        </Text>
+      <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+        <View>
+          <Text style={[styles.title, { color: colors.text }]}>TRACKER</Text>
+          <Text style={[styles.quoteText, { color: colors.textMuted }]}>
+            “ಸತ್ತ ಮೇಲೆ ಮಲಗೋದು ಇದ್ದೇ ಇದೆ ಎದ್ದಿದ್ದಾಗ ಏನಾದ್ರೂ ಸಾಧಿಸು”
+          </Text>
+        </View>
+        {loading && <ActivityIndicator size="small" color={colors.primary} />}
       </View>
       <Text style={[styles.subtitle, { color: colors.textMuted }]}>{monthName} {year} Overview</Text>
 
@@ -174,7 +187,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingTop: 64,
-    paddingBottom: 48,
+    paddingBottom: 130,
   },
   centered: {
     justifyContent: 'center',
