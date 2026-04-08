@@ -4,7 +4,7 @@ import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 
 // App Version: 1.0.3 - COMPLETE LOGO & SPEED FIX (Busting All Caches)
 SplashScreen.preventAutoHideAsync();
@@ -15,12 +15,18 @@ function InitialLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    // On Web, hide splash screen faster for better perceived speed
-    SplashScreen.hideAsync();
+    // Only hide splash screen after auth is fully loaded or on web where there's no native splash
+    if (Platform.OS === 'web') {
+      SplashScreen.hideAsync();
+    }
   }, []);
 
   useEffect(() => {
     if (authLoading) return;
+
+    if (Platform.OS !== 'web') {
+      SplashScreen.hideAsync();
+    }
 
     const inAuthGroup = segments[0] === '(auth)';
 

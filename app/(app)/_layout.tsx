@@ -1,6 +1,6 @@
 import React, { useEffect, memo } from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, useWindowDimensions, Platform } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { BlurView } from 'expo-blur';
 import Svg, { Path, Rect, Circle } from 'react-native-svg';
@@ -77,6 +77,11 @@ const TabIcon = memo(({ name, focused, colors, label }: { name: any, focused: bo
 });
 
 function CustomTabBar({ state, descriptors, navigation, colors, isDark }: any) {
+  const currentRouteName = state.routes[state.index].name;
+  if (['timer', 'reflection', 'coach'].includes(currentRouteName)) {
+    return null;
+  }
+
   const { width } = useWindowDimensions();
   const TAB_BAR_MARGIN = 48;
   const TAB_WIDTH = (width - TAB_BAR_MARGIN) / 3;
@@ -92,8 +97,8 @@ function CustomTabBar({ state, descriptors, navigation, colors, isDark }: any) {
   }));
 
   return (
-    <View style={[styles.tabBarContainer, { backgroundColor: isDark ? 'rgba(10,10,11,0.85)' : 'rgba(252,253,255,0.85)' }]}>
-      <BlurView intensity={isDark ? 40 : 60} style={StyleSheet.absoluteFill} tint={isDark ? 'dark' : 'light'} />
+    <View style={[styles.tabBarContainer, { backgroundColor: isDark ? (Platform.OS === 'android' ? '#111' : 'rgba(10,10,11,0.85)') : (Platform.OS === 'android' ? '#fff' : 'rgba(252,253,255,0.85)') }]}>
+      {Platform.OS !== 'android' && <BlurView intensity={isDark ? 40 : 60} style={StyleSheet.absoluteFill} tint={isDark ? 'dark' : 'light'} />}
       <Animated.View style={[styles.slider, sliderStyle]}>
         <View style={[styles.innerPill, { backgroundColor: colors.primary }]} />
       </Animated.View>
@@ -127,7 +132,7 @@ export default function AppLayout() {
   return (
     <Tabs 
       tabBar={(props) => <CustomTabBar {...props} colors={colors} isDark={isDark} />}
-      screenOptions={{ headerShown: false, freezeOnBlur: true }}
+      screenOptions={{ headerShown: false }}
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="tracker" />

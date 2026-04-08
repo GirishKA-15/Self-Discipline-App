@@ -35,24 +35,17 @@ export default function ReflectionScreen() {
       return;
     }
     
-    setLoading(true);
-    try {
-      if (!user) return;
+    if (user) {
       const today = new Date().toISOString().split('T')[0];
-      await updateDailyHabit((user as any).uid, today, {
+      updateDailyHabit((user as any).uid, today, {
         reflection_wins: wins,
         reflection_fails: fails,
         reflection_fixes: fixes
-      });
-      Alert.alert("Logged", "Daily reflection saved.", [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
-    } catch (e) {
-      console.error(e);
-      Alert.alert("Error", "Failed to save reflection.");
-    } finally {
-      setLoading(false);
+      }).catch(e => console.error("Failed to save reflection:", e));
     }
+    
+    // Optimistic close - instantly go back
+    router.back();
   };
 
   return (
